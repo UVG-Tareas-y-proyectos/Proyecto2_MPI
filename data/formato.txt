@@ -1,0 +1,17 @@
+ESTADO: formato propio implementado por indicación del usuario; aceptación de
+clase e interoperabilidad con otros equipos aún sin verificar.
+Algoritmo: DES simple, 56 bits efectivos, bloques de 8 bytes.
+Modo: ECB (elección provisional propia, no confirmada por la clase).
+Relleno: PKCS#7; siempre agrega entre 1 y 8 bytes.
+IV: no corresponde al modo ECB.
+Formato: bytes de cifrado sin cabecera, sal ni metadatos añadidos.
+Clave: índice decimal sin signo, 0 <= índice < 72057594037927936.
+Mapeo: desde el grupo más significativo del índice, ocho grupos de 7 bits;
+cada grupo ocupa los bits 7..1 del byte; bit 0 completa paridad impar.
+Codificación del original del equipo: UTF-8, sin BOM ni salto de línea final.
+El programa acepta bytes arbitrarios y conserva su longitud al descifrar.
+texto.bin: 48 bytes; original: 40 bytes, 6 palabras (máximo permitido:350).
+Frase literal de búsqueda: Estudiante
+Pista humana: Le tiene miedo a las mujeres
+La pista humana es una adivinanza y no se usa como substring en el descifrado.
+Recuperación con clave conocida verificada exacta mediante cmp (salida0).

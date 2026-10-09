@@ -13,8 +13,8 @@ build:
 build/des_tool: src/des_tool.c src/des_common.c include/des_common.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) src/des_tool.c src/des_common.c -o $@ $(LDLIBS)
 
-build/bruteforce_mpi: src/bruteforce_mpi.c src/des_common.c include/des_common.h | build
-	$(MPICC) $(CPPFLAGS) $(CFLAGS) src/bruteforce_mpi.c src/des_common.c -o $@ $(LDLIBS)
+build/bruteforce_mpi: src/bruteforce.c src/des_common.c include/des_common.h | build
+	$(MPICC) $(CPPFLAGS) $(CFLAGS) src/bruteforce.c src/des_common.c -o $@ $(LDLIBS)
 
 test: all
 	python3 scripts/verify.py

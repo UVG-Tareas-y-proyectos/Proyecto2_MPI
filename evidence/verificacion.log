@@ -1,0 +1,519 @@
+$ ./build/des_tool encrypt --input /workspace/private/tests/vector_des.original --output /workspace/private/tests/vector_des.bin --key-file /workspace/private/tests/vector_des.key
+operation=encrypt
+status=ok
+input=/workspace/private/tests/vector_des.original
+output=/workspace/private/tests/vector_des.bin
+bytes_in=8
+bytes_out=16
+exit_code=0
+
+$ ./build/des_tool decrypt --input /workspace/private/tests/vector_des.bin --output /workspace/private/tests/vector_des.recovered --key-file /workspace/private/tests/vector_des.key
+operation=decrypt
+status=ok
+input=/workspace/private/tests/vector_des.bin
+output=/workspace/private/tests/vector_des.recovered
+bytes_in=16
+bytes_out=8
+exit_code=0
+
+$ cmp /workspace/private/tests/vector_des.original /workspace/private/tests/vector_des.recovered
+exit_code=0
+
+PASS vector DES 0123456789abcdef -> 85e813540f0ab405
+$ openssl enc -des-ecb -provider default -provider legacy -K 133457799bbcdff1 -in /workspace/private/tests/vector_des.original -out /workspace/private/tests/vector_reference.bin
+exit_code=0
+
+$ cmp /workspace/private/tests/vector_des.bin /workspace/private/tests/vector_reference.bin
+exit_code=0
+
+$ ./build/des_tool encrypt --input /workspace/private/tests/empty.original --output /workspace/private/tests/empty.bin --key-file /workspace/private/tests/empty.key
+operation=encrypt
+status=ok
+input=/workspace/private/tests/empty.original
+output=/workspace/private/tests/empty.bin
+bytes_in=0
+bytes_out=8
+exit_code=0
+
+$ ./build/des_tool decrypt --input /workspace/private/tests/empty.bin --output /workspace/private/tests/empty.recovered --key-file /workspace/private/tests/empty.key
+operation=decrypt
+status=ok
+input=/workspace/private/tests/empty.bin
+output=/workspace/private/tests/empty.recovered
+bytes_in=8
+bytes_out=0
+exit_code=0
+
+$ cmp /workspace/private/tests/empty.original /workspace/private/tests/empty.recovered
+exit_code=0
+
+$ ./build/des_tool encrypt --input /workspace/private/tests/unaligned.original --output /workspace/private/tests/unaligned.bin --key-file /workspace/private/tests/unaligned.key
+operation=encrypt
+status=ok
+input=/workspace/private/tests/unaligned.original
+output=/workspace/private/tests/unaligned.bin
+bytes_in=34
+bytes_out=40
+exit_code=0
+
+$ ./build/des_tool decrypt --input /workspace/private/tests/unaligned.bin --output /workspace/private/tests/unaligned.recovered --key-file /workspace/private/tests/unaligned.key
+operation=decrypt
+status=ok
+input=/workspace/private/tests/unaligned.bin
+output=/workspace/private/tests/unaligned.recovered
+bytes_in=40
+bytes_out=34
+exit_code=0
+
+$ cmp /workspace/private/tests/unaligned.original /workspace/private/tests/unaligned.recovered
+exit_code=0
+
+$ ./build/des_tool encrypt --input /workspace/private/tests/binary.original --output /workspace/private/tests/binary.bin --key-file /workspace/private/tests/binary.key
+operation=encrypt
+status=ok
+input=/workspace/private/tests/binary.original
+output=/workspace/private/tests/binary.bin
+bytes_in=41
+bytes_out=48
+exit_code=0
+
+$ ./build/des_tool decrypt --input /workspace/private/tests/binary.bin --output /workspace/private/tests/binary.recovered --key-file /workspace/private/tests/binary.key
+operation=decrypt
+status=ok
+input=/workspace/private/tests/binary.bin
+output=/workspace/private/tests/binary.recovered
+bytes_in=48
+bytes_out=41
+exit_code=0
+
+$ cmp /workspace/private/tests/binary.original /workspace/private/tests/binary.recovered
+exit_code=0
+
+$ ./build/des_tool search --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 0 --end 100 --output /workspace/private/tests/seq.search
+algorithm=sequential
+input=/workspace/private/tests/binary.bin
+keyword=PISTA_PRUEBA_MPI_DISTINTIVA
+start=0
+end=100
+status=found
+attempts=38
+seconds=0.000045941
+key=37
+bytes_recovered=41
+output=/workspace/private/tests/seq.search
+exit_code=0
+
+$ cmp /workspace/private/tests/binary.original /workspace/private/tests/seq.search
+exit_code=0
+
+$ ./build/des_tool search --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 0 --end 37
+algorithm=sequential
+input=/workspace/private/tests/binary.bin
+keyword=PISTA_PRUEBA_MPI_DISTINTIVA
+start=0
+end=37
+status=not_found
+attempts=37
+seconds=0.000029026
+key=none
+exit_code=2
+
+$ ./build/des_tool search --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 37 --end 38
+algorithm=sequential
+input=/workspace/private/tests/binary.bin
+keyword=PISTA_PRUEBA_MPI_DISTINTIVA
+start=37
+end=38
+status=found
+attempts=1
+seconds=0.000002890
+key=37
+bytes_recovered=41
+exit_code=0
+
+$ ./build/des_tool search --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 5 --end 6
+algorithm=sequential
+input=/workspace/private/tests/binary.bin
+keyword=PISTA_PRUEBA_MPI_DISTINTIVA
+start=5
+end=6
+status=not_found
+attempts=1
+seconds=0.000003060
+key=none
+exit_code=2
+
+$ ./build/des_tool search --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 0 --end 0
+algorithm=sequential
+input=/workspace/private/tests/binary.bin
+keyword=PISTA_PRUEBA_MPI_DISTINTIVA
+start=0
+end=0
+status=not_found
+attempts=0
+seconds=0.000000163
+key=none
+exit_code=2
+
+$ ./build/des_tool search --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 0 --end 100 --output /workspace/private/tests/binary.bin
+error=Output must differ from the input and key file
+Usage:
+  des_tool encrypt --input FILE --output FILE --key-file FILE
+  des_tool decrypt --input FILE --output FILE --key-file FILE
+  des_tool search --input FILE --keyword TEXT --start INDEX --end INDEX [--output FILE]
+Indices are decimal; keys are in [0, 2^56), end is exclusive.
+Provisional format: raw DES-ECB with PKCS#7 padding.
+Exit codes: 0 success/found; 1 argument or operational error; 2 search exhausted.
+exit_code=1
+
+$ ./build/des_tool search --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 38 --end 37
+error=Invalid range: require 0 <= start <= end <= 2^56 and start < 2^56
+Usage:
+  des_tool encrypt --input FILE --output FILE --key-file FILE
+  des_tool decrypt --input FILE --output FILE --key-file FILE
+  des_tool search --input FILE --keyword TEXT --start INDEX --end INDEX [--output FILE]
+Indices are decimal; keys are in [0, 2^56), end is exclusive.
+Provisional format: raw DES-ECB with PKCS#7 padding.
+Exit codes: 0 success/found; 1 argument or operational error; 2 search exhausted.
+exit_code=1
+
+$ ./build/des_tool search --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start -1 --end 100
+error=Invalid range: require 0 <= start <= end <= 2^56 and start < 2^56
+Usage:
+  des_tool encrypt --input FILE --output FILE --key-file FILE
+  des_tool decrypt --input FILE --output FILE --key-file FILE
+  des_tool search --input FILE --keyword TEXT --start INDEX --end INDEX [--output FILE]
+Indices are decimal; keys are in [0, 2^56), end is exclusive.
+Provisional format: raw DES-ECB with PKCS#7 padding.
+Exit codes: 0 success/found; 1 argument or operational error; 2 search exhausted.
+exit_code=1
+
+$ ./build/des_tool search --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 0 --end 72057594037927937
+error=Invalid range: require 0 <= start <= end <= 2^56 and start < 2^56
+Usage:
+  des_tool encrypt --input FILE --output FILE --key-file FILE
+  des_tool decrypt --input FILE --output FILE --key-file FILE
+  des_tool search --input FILE --keyword TEXT --start INDEX --end INDEX [--output FILE]
+Indices are decimal; keys are in [0, 2^56), end is exclusive.
+Provisional format: raw DES-ECB with PKCS#7 padding.
+Exit codes: 0 success/found; 1 argument or operational error; 2 search exhausted.
+exit_code=1
+
+$ ./build/des_tool search --input /workspace/private/tests/missing.bin --keyword pista
+error=Missing required options
+Usage:
+  des_tool encrypt --input FILE --output FILE --key-file FILE
+  des_tool decrypt --input FILE --output FILE --key-file FILE
+  des_tool search --input FILE --keyword TEXT --start INDEX --end INDEX [--output FILE]
+Indices are decimal; keys are in [0, 2^56), end is exclusive.
+Provisional format: raw DES-ECB with PKCS#7 padding.
+Exit codes: 0 success/found; 1 argument or operational error; 2 search exhausted.
+exit_code=1
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 0 --end 100 --output /workspace/private/tests/mpi.search
+algorithm=mpi
+input=/workspace/private/tests/binary.bin
+keyword=PISTA_PRUEBA_MPI_DISTINTIVA
+processes=4
+start=0
+end=100
+batch=4096
+key=37
+attempts=85
+status=found
+seconds=0.000033929
+exit_code=0
+
+$ cmp /workspace/private/tests/binary.original /workspace/private/tests/mpi.search
+exit_code=0
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 0 --end 37
+algorithm=mpi
+input=/workspace/private/tests/binary.bin
+keyword=PISTA_PRUEBA_MPI_DISTINTIVA
+processes=4
+start=0
+end=37
+batch=4096
+key=none
+attempts=37
+status=not_found
+seconds=0.000017259
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[21207,1],0]
+  Exit code:    2
+--------------------------------------------------------------------------
+exit_code=2
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 37 --end 38
+algorithm=mpi
+input=/workspace/private/tests/binary.bin
+keyword=PISTA_PRUEBA_MPI_DISTINTIVA
+processes=4
+start=37
+end=38
+batch=4096
+key=37
+attempts=1
+status=found
+seconds=0.000042988
+exit_code=0
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 5 --end 6
+algorithm=mpi
+input=/workspace/private/tests/binary.bin
+keyword=PISTA_PRUEBA_MPI_DISTINTIVA
+processes=4
+start=5
+end=6
+batch=4096
+key=none
+attempts=1
+status=not_found
+seconds=0.000007013
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[21161,1],0]
+  Exit code:    2
+--------------------------------------------------------------------------
+exit_code=2
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 0 --end 0
+algorithm=mpi
+input=/workspace/private/tests/binary.bin
+keyword=PISTA_PRUEBA_MPI_DISTINTIVA
+processes=4
+start=0
+end=0
+batch=4096
+key=none
+attempts=0
+status=not_found
+seconds=0.000003647
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[21178,1],0]
+  Exit code:    2
+--------------------------------------------------------------------------
+exit_code=2
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 0 --end 100 --output /workspace/private/tests/binary.bin
+error=output must differ from the ciphertext input
+Usage: ./build/bruteforce_mpi --input FILE --keyword TEXT [--start N] [--end N]
+          [--batch N] [--output FILE]
+Searches [start,end) with cyclic MPI distribution. Defaults:
+start=0, end=72057594037927936 (2^56), batch=4096.
+Exit codes: 0=found, 2=not_found, 1=error.
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[21131,1],0]
+  Exit code:    1
+--------------------------------------------------------------------------
+exit_code=1
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 38 --end 37
+error=require 0 <= start <= end <= 2^56 and batch > 0
+Usage: ./build/bruteforce_mpi --input FILE --keyword TEXT [--start N] [--end N]
+          [--batch N] [--output FILE]
+Searches [start,end) with cyclic MPI distribution. Defaults:
+start=0, end=72057594037927936 (2^56), batch=4096.
+Exit codes: 0=found, 2=not_found, 1=error.
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[21148,1],2]
+  Exit code:    1
+--------------------------------------------------------------------------
+exit_code=1
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start -1 --end 100
+error=invalid decimal value for --start
+Usage: ./build/bruteforce_mpi --input FILE --keyword TEXT [--start N] [--end N]
+          [--batch N] [--output FILE]
+Searches [start,end) with cyclic MPI distribution. Defaults:
+start=0, end=72057594037927936 (2^56), batch=4096.
+Exit codes: 0=found, 2=not_found, 1=error.
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[21101,1],2]
+  Exit code:    1
+--------------------------------------------------------------------------
+exit_code=1
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 0 --end 72057594037927937
+error=invalid decimal value for --end
+Usage: ./build/bruteforce_mpi --input FILE --keyword TEXT [--start N] [--end N]
+          [--batch N] [--output FILE]
+Searches [start,end) with cyclic MPI distribution. Defaults:
+start=0, end=72057594037927936 (2^56), batch=4096.
+Exit codes: 0=found, 2=not_found, 1=error.
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[21118,1],1]
+  Exit code:    1
+--------------------------------------------------------------------------
+exit_code=1
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/missing.bin --keyword pista
+error=Cannot open '/workspace/private/tests/missing.bin': No such file or directory
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[21071,1],0]
+  Exit code:    1
+--------------------------------------------------------------------------
+exit_code=1
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/binary.bin --keyword PISTA_INEXISTENTE_987654321 --start 0 --end 40001
+algorithm=mpi
+input=/workspace/private/tests/binary.bin
+keyword=PISTA_INEXISTENTE_987654321
+processes=4
+start=0
+end=40001
+batch=4096
+key=none
+attempts=40001
+status=not_found
+seconds=0.010640977
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[21072,1],0]
+  Exit code:    2
+--------------------------------------------------------------------------
+exit_code=2
+
+$ ./build/des_tool encrypt --input /workspace/private/tests/upper_bound.original --output /workspace/private/tests/upper_bound.bin --key-file /workspace/private/tests/upper_bound.key
+operation=encrypt
+status=ok
+input=/workspace/private/tests/upper_bound.original
+output=/workspace/private/tests/upper_bound.bin
+bytes_in=28
+bytes_out=32
+exit_code=0
+
+$ ./build/des_tool decrypt --input /workspace/private/tests/upper_bound.bin --output /workspace/private/tests/upper_bound.recovered --key-file /workspace/private/tests/upper_bound.key
+operation=decrypt
+status=ok
+input=/workspace/private/tests/upper_bound.bin
+output=/workspace/private/tests/upper_bound.recovered
+bytes_in=32
+bytes_out=28
+exit_code=0
+
+$ cmp /workspace/private/tests/upper_bound.original /workspace/private/tests/upper_bound.recovered
+exit_code=0
+
+$ ./build/des_tool search --input /workspace/private/tests/upper_bound.bin --keyword PISTA_LIMITE_DOMINIO_56_BITS --start 72057594037927934 --end 72057594037927936 --output /workspace/private/tests/upper.seq
+algorithm=sequential
+input=/workspace/private/tests/upper_bound.bin
+keyword=PISTA_LIMITE_DOMINIO_56_BITS
+start=72057594037927934
+end=72057594037927936
+status=found
+attempts=2
+seconds=0.000004150
+key=72057594037927935
+bytes_recovered=28
+output=/workspace/private/tests/upper.seq
+exit_code=0
+
+$ cmp /workspace/private/tests/upper_bound.original /workspace/private/tests/upper.seq
+exit_code=0
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/upper_bound.bin --keyword PISTA_LIMITE_DOMINIO_56_BITS --start 72057594037927934 --end 72057594037927936 --output /workspace/private/tests/upper.mpi
+algorithm=mpi
+input=/workspace/private/tests/upper_bound.bin
+keyword=PISTA_LIMITE_DOMINIO_56_BITS
+processes=4
+start=72057594037927934
+end=72057594037927936
+batch=4096
+key=72057594037927935
+attempts=2
+status=found
+seconds=0.000011755
+exit_code=0
+
+$ cmp /workspace/private/tests/upper_bound.original /workspace/private/tests/upper.mpi
+exit_code=0
+
+$ ./build/des_tool decrypt --input /workspace/private/tests/malformed.bin --output /workspace/private/tests/invalid.out --key-file /workspace/private/tests/upper_bound.key
+status=error
+error=Ciphertext must contain complete eight-byte blocks and fit the file limit
+exit_code=1
+
+$ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/malformed.bin --keyword pista --end 100
+error=ciphertext must contain complete DES blocks and fit MPI count
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[21051,1],0]
+  Exit code:    1
+--------------------------------------------------------------------------
+exit_code=1
+
+$ ./build/des_tool encrypt --input /workspace/private/tests/upper_bound.original --output /workspace/private/tests/invalid.bin --key-file /workspace/private/tests/invalid.key
+status=error
+error=Key file must contain one decimal index in [0, 2^56)
+exit_code=1
+
+PASS: vector externo, roundtrip vacío/irregular/binario, rangos y errores, MPI termina.
