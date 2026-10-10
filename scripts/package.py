@@ -28,7 +28,7 @@ if args.kind == 'foro':
     output = dist / ('foro.zip' if class_checked else 'foro_formato_propio.zip')
 else:
     files = []
-    for folder in ['src','include','scripts','docs','evidence','base','output/pdf']:
+    for folder in ['src','include','scripts','docs','evidence','base','data','output/pdf']:
         files.extend(path for path in (root / folder).rglob('*') if path.is_file() and '__pycache__' not in path.parts)
     files.extend(root / name for name in ['README.md','Makefile','Dockerfile','.gitignore','.gitattributes','.dockerignore'])
     # Mediciones del equipo contienen la solución; sólo entran en la entrega docente.
