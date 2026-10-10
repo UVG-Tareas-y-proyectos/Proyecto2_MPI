@@ -42,7 +42,8 @@ docker run --rm --mount "type=bind,source=$($PWD.Path),target=/workspace" proyec
 
 Las claves y los originales se guardan en `private/`, excluido de Git.
 Los ejecutables se generan en `build/`, también excluido.
-Consultar `docs/ESTADO_AVANCE.md` para los resultados y pendientes reales.
+La carpeta `docs/` contiene documentación privada del equipo y se conserva
+sólo en la copia local; no se incluye al clonar el repositorio público.
 
 ## Cifrar, descifrar y recuperar
 
@@ -103,11 +104,17 @@ y preparación criptográfica; MPI incluye la comunicación de las tandas.
 
 `dist/foro_formato_propio.zip` contiene solamente el cifrado, los metadatos y
 la publicación preparada. La aceptación del formato de clase sigue pendiente.
-`dist/avance_preliminar.zip` incluye fuentes, documentación, PDF, planificación
+`dist/avance_preliminar.zip` incluye fuentes, documentación privada del equipo,
+`docs/Avances.pdf`, `docs/Avances.docx`, planificación
 y evidencia; sus logs privados de recuperación se destinan al docente y revelan
 la solución. La clave de verificación se mantiene aparte en
 `private/clave_equipo.txt`, para compartirla con el docente cuando la solicite.
 
+Para preparar el paquete del avance se necesitan los documentos de `docs/`
+y los datos de `private/` en la copia local. `scripts/render_report.py` llama
+al generador privado para producir el DOCX; el PDF se exporta con Word o
+LibreOffice y se revisa antes de empaquetar.
+
 No se hicieron comparaciones con otros equipos, optimizaciones de speedup ni
 ejecuciones en varias máquinas. Las capturas de terminal real y las fechas Canvas
-siguen pendientes. Ver `docs/CAPTURAS.md` y `docs/REQUISITOS.md`.
+siguen pendientes.

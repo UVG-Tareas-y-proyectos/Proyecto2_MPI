@@ -28,12 +28,21 @@ if args.kind == 'foro':
     output = dist / ('foro.zip' if class_checked else 'foro_formato_propio.zip')
 else:
     files = []
-    for folder in ['src','include','scripts','docs','evidence','base','data','output/pdf']:
-        files.extend(path for path in (root / folder).rglob('*') if path.is_file() and '__pycache__' not in path.parts)
+    for folder in ['src','include','scripts','evidence','base','data']:
+        files.extend(path for path in (root / folder).rglob('*')
+                     if path.is_file() and '__pycache__' not in path.parts
+                     and path.name != 'COMANDOS_EJECUTADOS.md')
+    # docs/ es privado en Git, pero forma parte de la entrega al docente.
+    # Se incluyen los documentos finales y sus fuentes Markdown, sin material de QA.
+    files.extend(sorted((root / 'docs').glob('*.md')))
+    files.extend(root / 'docs' / name for name in ['Avances.pdf', 'Avances.docx'])
     files.extend(root / name for name in ['README.md','Makefile','Dockerfile','.gitignore','.gitattributes','.dockerignore'])
     # Mediciones del equipo contienen la solución; sólo entran en la entrega docente.
     files.extend(path for path in (root / 'private/evidence').glob('*') if path.is_file())
     output = dist / 'avance_preliminar.zip'
+missing = [str(path.relative_to(root)) for path in files if not path.is_file()]
+if missing:
+    raise SystemExit('Faltan archivos locales para preparar la entrega: ' + ', '.join(missing))
 with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
     for path in files:
         relative = path.relative_to(root)

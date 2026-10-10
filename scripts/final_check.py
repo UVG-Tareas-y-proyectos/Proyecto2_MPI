@@ -22,9 +22,13 @@ assert len(keys) == 33 and set(keys) == {known_key}
 assert len(re.findall(r'^exit_code=0$', log, re.M)) == 33
 with zipfile.ZipFile(root / 'dist/avance_preliminar.zip') as archive:
     assert archive.testzip() is None
-    required = {'Makefile','README.md','src/des_common.c','src/des_tool.c','src/bruteforce.c','include/des_common.h','data/texto.bin','data/formato.txt','output/pdf/AVANCE_PRELIMINAR_MPI.pdf','evidence_docente/mediciones.csv','evidence_docente/mediciones.log','evidence_docente/cifrado.log'}
+    required = {'Makefile','README.md','src/des_common.c','src/des_tool.c','src/bruteforce.c','include/des_common.h','data/texto.bin','data/formato.txt','docs/Avances.pdf','docs/Avances.docx','docs/AVANCE.md','docs/PLAN_AVANCE.md','evidence_docente/mediciones.csv','evidence_docente/mediciones.log','evidence_docente/cifrado.log'}
     assert required <= set(archive.namelist())
     assert not any(name.startswith(('private/','build/','.git/')) for name in archive.namelist())
+    assert 'output/pdf/AVANCE_PRELIMINAR_MPI.pdf' not in archive.namelist()
+    assert 'evidence/COMANDOS_EJECUTADOS.md' not in archive.namelist()
+    assert all(name.endswith('.md') or name in {'docs/Avances.pdf','docs/Avances.docx'}
+               for name in archive.namelist() if name.startswith('docs/'))
     for name in required - {'evidence_docente/mediciones.csv','evidence_docente/mediciones.log','evidence_docente/cifrado.log'}:
         assert archive.read(name) == (root / name).read_bytes()
 with zipfile.ZipFile(root / 'dist/foro_formato_propio.zip') as archive:

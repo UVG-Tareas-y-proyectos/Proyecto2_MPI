@@ -1,6 +1,7 @@
 /build/
 /dist/
 /private/
+/docs/
 *.o
 *.out
 __pycache__/
