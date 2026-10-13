@@ -11,6 +11,7 @@
 enum { REPORT_FOUND, REPORT_KEY, REPORT_EXHAUSTED, REPORT_ERROR, REPORT_SIZE };
 enum { DECISION_CONTINUE, DECISION_FOUND, DECISION_NOT_FOUND, DECISION_ERROR };
 enum { REPORT_TAG = 37 };
+enum { DISTRIBUTION_CYCLIC, DISTRIBUTION_BLOCK };
 
 typedef struct {
     const char *input;
@@ -19,15 +20,17 @@ typedef struct {
     uint64_t start;
     uint64_t end;
     uint64_t batch;
+    int distribution;
 } search_options;
 
 static void usage(FILE *stream, const char *program)
 {
     fprintf(stream,
             "Usage: %s --input FILE --keyword TEXT [--start N] [--end N]\n"
-            "          [--batch N] [--output FILE]\n"
-            "Searches [start,end) with cyclic MPI distribution. Defaults:\n"
-            "start=0, end=72057594037927936 (2^56), batch=4096.\n"
+            "          [--batch N] [--distribution cyclic|block] [--output FILE]\n"
+            "Searches [start,end) with cyclic or contiguous-block MPI distribution.\n"
+            "Defaults: start=0, end=72057594037927936 (2^56), batch=4096,\n"
+            "distribution=cyclic.\n"
             "Exit codes: 0=found, 2=not_found, 1=error.\n",
             program);
 }
@@ -51,7 +54,8 @@ static int parse_options(int argc, char **argv, search_options *options,
     unsigned int seen = 0;
     int i;
 
-    *options = (search_options){NULL, NULL, NULL, 0, DES_KEY_LIMIT, 4096};
+    *options = (search_options){NULL, NULL, NULL, 0, DES_KEY_LIMIT, 4096,
+                                DISTRIBUTION_CYCLIC};
     for (i = 1; i < argc; ++i) {
         const char *name = argv[i];
         const char *value;
@@ -72,6 +76,8 @@ static int parse_options(int argc, char **argv, search_options *options,
             flag = 16u;
         } else if (strcmp(name, "--output") == 0) {
             flag = 32u;
+        } else if (strcmp(name, "--distribution") == 0) {
+            flag = 64u;
         } else {
             snprintf(error, error_size, "unknown argument: %s", name);
             return 0;
@@ -92,6 +98,16 @@ static int parse_options(int argc, char **argv, search_options *options,
             options->keyword = value;
         } else if (flag == 32u) {
             options->output = value;
+        } else if (flag == 64u) {
+            if (strcmp(value, "cyclic") == 0) {
+                options->distribution = DISTRIBUTION_CYCLIC;
+            } else if (strcmp(value, "block") == 0) {
+                options->distribution = DISTRIBUTION_BLOCK;
+            } else {
+                snprintf(error, error_size,
+                         "invalid distribution: use cyclic or block");
+                return 0;
+            }
         } else {
             uint64_t number;
             uint64_t limit = flag == 16u ? UINT64_MAX : DES_KEY_LIMIT;
@@ -155,7 +171,7 @@ int main(int argc, char **argv)
     unsigned char *keyword = NULL;
     size_t ciphertext_length = 0;
     size_t keyword_length = 0;
-    uint64_t settings[5] = {0};
+    uint64_t settings[6] = {0};
     uint64_t *reports = NULL;
     MPI_Request *requests = NULL;
     des_crypto crypto = {0};
@@ -164,6 +180,8 @@ int main(int argc, char **argv)
     uint64_t attempts = 0;
     uint64_t total_attempts = 0;
     uint64_t next;
+    uint64_t local_end;
+    uint64_t stride;
     uint64_t local_report[REPORT_SIZE] = {0};
     uint64_t decision[2] = {DECISION_CONTINUE, 0};
     double begin;
@@ -206,6 +224,7 @@ int main(int argc, char **argv)
             settings[2] = options.batch;
             settings[3] = (uint64_t)ciphertext_length;
             settings[4] = (uint64_t)keyword_length;
+            settings[5] = (uint64_t)options.distribution;
         }
     }
     MPI_CALL(MPI_Bcast(&setup_status, 1, MPI_INT, 0, MPI_COMM_WORLD));
@@ -213,7 +232,7 @@ int main(int argc, char **argv)
         exit_code = setup_status == 2 ? 0 : 1;
         goto cleanup;
     }
-    MPI_CALL(MPI_Bcast(settings, 5, MPI_UINT64_T, 0, MPI_COMM_WORLD));
+    MPI_CALL(MPI_Bcast(settings, 6, MPI_UINT64_T, 0, MPI_COMM_WORLD));
     ciphertext_length = (size_t)settings[3];
     keyword_length = (size_t)settings[4];
     keyword = malloc(keyword_length + 1);
@@ -263,11 +282,27 @@ int main(int argc, char **argv)
         goto cleanup;
     }
 
-    /* Keys start+rank+j*processes partition [start,end), including root.
+    /* Both policies partition [start,end) without overlap and include root.
      * A rank with no keys still sends a report and joins every broadcast. */
-    next = (uint64_t)rank < settings[1] - settings[0]
-               ? settings[0] + (uint64_t)rank : settings[1];
-    local_report[REPORT_EXHAUSTED] = next >= settings[1];
+    if (settings[5] == DISTRIBUTION_BLOCK) {
+        uint64_t count = settings[1] - settings[0];
+        uint64_t process_count = (uint64_t)processes;
+        uint64_t base = count / process_count;
+        uint64_t remainder = count % process_count;
+        uint64_t rank_value = (uint64_t)rank;
+        uint64_t offset = rank_value * base +
+                          (rank_value < remainder ? rank_value : remainder);
+        uint64_t local_count = base + (rank_value < remainder ? 1u : 0u);
+        next = settings[0] + offset;
+        local_end = next + local_count;
+        stride = 1;
+    } else {
+        next = (uint64_t)rank < settings[1] - settings[0]
+                   ? settings[0] + (uint64_t)rank : settings[1];
+        local_end = settings[1];
+        stride = (uint64_t)processes;
+    }
+    local_report[REPORT_EXHAUSTED] = next >= local_end;
     MPI_CALL(MPI_Barrier(MPI_COMM_WORLD));
     begin = MPI_Wtime();
     do {
@@ -300,8 +335,8 @@ int main(int argc, char **argv)
                 local_report[REPORT_FOUND] = 1;
                 local_report[REPORT_KEY] = next;
             }
-            next += (uint64_t)processes;
-            local_report[REPORT_EXHAUSTED] = next >= settings[1];
+            next += stride;
+            local_report[REPORT_EXHAUSTED] = next >= local_end;
         }
         if (rank != 0) {
             MPI_CALL(MPI_Send(local_report, REPORT_SIZE, MPI_UINT64_T, 0,
@@ -373,9 +408,10 @@ int main(int argc, char **argv)
             status = "error";
         }
         printf("algorithm=mpi\ninput=%s\nkeyword=%s\nprocesses=%d\nstart=%" PRIu64
-               "\nend=%" PRIu64 "\nbatch=%" PRIu64 "\n",
+               "\nend=%" PRIu64 "\nbatch=%" PRIu64 "\ndistribution=%s\n",
                options.input, options.keyword, processes, settings[0],
-               settings[1], settings[2]);
+                settings[1], settings[2],
+                settings[5] == DISTRIBUTION_BLOCK ? "block" : "cyclic");
         if (decision[0] == DECISION_FOUND) {
             printf("key=%" PRIu64 "\n", decision[1]);
         } else {
