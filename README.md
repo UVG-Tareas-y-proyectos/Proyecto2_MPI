@@ -10,18 +10,19 @@ CC3069 Computación Paralela y Distribuida, Universidad del Valle de Guatemala.
 
 Repositorio existente: https://github.com/UVG-Tareas-y-proyectos/Proyecto2_MPI
 
-## Estado del avance
+## Estado final
 
-Se implementaron DES secuencial y OpenMPI. Por indicación del usuario,
-`src/bruteforce.c` es código propio. El formato es DES-ECB con PKCS#7 y está
-documentado en `data/formato.txt`; queda por confirmar si es el formato acordado
-por la clase. No se afirma compatibilidad con un ejemplo que no fue facilitado.
+Se implementaron DES secuencial y OpenMPI. `src/bruteforce.c` es código propio.
+El formato DES-ECB con PKCS#7 está documentado en `data/formato.txt`. La búsqueda
+MPI permite comparar `--distribution block` y `--distribution cyclic`; el reparto
+cíclico es el valor predeterminado.
 
 El texto elegido por el equipo ya está cifrado en `data/texto.bin`. La pista humana
 es «Le tiene miedo a las mujeres» y la frase literal de búsqueda es `Estudiante`.
 El original y la clave no se incluyen en el repositorio público.
 
-El número de grupo y las fechas vigentes de Canvas están pendientes.
+Grupo 6. El informe final está disponible como `Informe_Final_Proyecto_2.docx`,
+`Informe_Final_Proyecto_2.pdf` y fuente verificable `Informe_Final.md`.
 
 ## Compilación
 
@@ -83,6 +84,8 @@ no el dominio completo DES `[0,2^56)`. El programa acepta ambos límites.
 ```bash
 make test
 make measure
+make benchmark
+make benchmark-check
 python3 scripts/package.py avance
 python3 scripts/package.py foro --formato-propio
 ```
@@ -100,21 +103,21 @@ Tiempo secuencial: reloj monotónico del propio proceso. Tiempo MPI: máximo de
 los intervalos medidos con `MPI_Wtime` por cada proceso. Ambos excluyen lectura
 y preparación criptográfica; MPI incluye la comunicación de las tandas.
 
+`make benchmark` genera tres casos controlados en un espacio de 2^20 y ejecuta
+210 mediciones: secuencial y MPI con reparto por bloques o cíclico, 2, 4 y 6
+procesos, y 10 repeticiones por configuración. Los datos están en
+`evidence/distribution_benchmark.csv`; los promedios, speedups y eficiencias en
+`evidence/distribution_summary.csv`. `make benchmark-check` recalcula y valida
+la bitácora.
+
 ## Entregas
 
-`dist/foro_formato_propio.zip` contiene solamente el cifrado, los metadatos y
-la publicación preparada. La aceptación del formato de clase sigue pendiente.
-`dist/avance_preliminar.zip` incluye fuentes, documentación privada del equipo,
-`docs/Avances.pdf`, `docs/Avances.docx`, planificación
-y evidencia; sus logs privados de recuperación se destinan al docente y revelan
-la solución. La clave de verificación se mantiene aparte en
-`private/clave_equipo.txt`, para compartirla con el docente cuando la solicite.
+`dist/entrega_final.zip` reúne el código fuente, el informe DOCX/PDF, el texto
+cifrado y la evidencia pública. La clave y el plaintext permanecen fuera de Git;
+pueden entregarse al docente por un canal separado si solicita una verificación.
+El paquete se genera con `python3 scripts/package.py final` y se comprueba con
+`python3 scripts/final_check.py`.
 
-Para preparar el paquete del avance se necesitan los documentos de `docs/`
-y los datos de `private/` en la copia local. `scripts/render_report.py` llama
-al generador privado para producir el DOCX; el PDF se exporta con Word o
-LibreOffice y se revisa antes de empaquetar.
-
-No se hicieron comparaciones con otros equipos, optimizaciones de speedup ni
-ejecuciones en varias máquinas. Las capturas de terminal real y las fechas Canvas
-siguen pendientes.
+No se atribuyen resultados a otros equipos: los insumos disponibles solo incluyen
+el ciphertext del Grupo 6. El programa y la metodología quedan listos para agregar
+dos casos externos compatibles cuando se reciban sus archivos y palabras literales.
