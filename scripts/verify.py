@@ -79,6 +79,24 @@ with LOG.open('w', encoding='utf-8') as log:
         run(prefix + ['--input', str(CASE / 'missing.bin'), '--keyword', 'pista'], expected=1)
     multi = run(MPI + ['--input', str(cipher), '--keyword', 'PISTA_INEXISTENTE_987654321', '--start', '0', '--end', '40001'], expected=2)
     assert dict(re.findall(r'^([a-z_]+)=(.*)$', multi, re.M))['attempts'] == '40001'
+    for distribution in ['cyclic', 'block']:
+        recovered = CASE / ('distribution.' + distribution)
+        output = run(MPI + ['--input', str(cipher), '--keyword',
+                            'PISTA_PRUEBA_MPI_DISTINTIVA', '--start', '0',
+                            '--end', '100', '--distribution', distribution,
+                            '--output', str(recovered)])
+        fields = dict(re.findall(r'^([a-z_]+)=(.*)$', output, re.M))
+        assert fields['key'] == '37'
+        assert fields['distribution'] == distribution
+        run(['cmp', str(original), str(recovered)])
+        exhausted = run(MPI + ['--input', str(cipher), '--keyword',
+                               'PISTA_INEXISTENTE_987654321', '--start', '0',
+                               '--end', '40001', '--distribution', distribution],
+                        expected=2)
+        assert dict(re.findall(r'^([a-z_]+)=(.*)$', exhausted, re.M))['attempts'] == '40001'
+    run(MPI + ['--input', str(cipher), '--keyword',
+               'PISTA_PRUEBA_MPI_DISTINTIVA', '--start', '0', '--end', '100',
+               '--distribution', 'unknown'], expected=1)
     original, cipher, keyfile = roundtrip('upper_bound', b'PISTA_LIMITE_DOMINIO_56_BITS', (1 << 56) - 1)
     for prefix in [[TOOL, 'search'], MPI]:
         recovered = CASE / ('upper.' + ('mpi' if prefix == MPI else 'seq'))
