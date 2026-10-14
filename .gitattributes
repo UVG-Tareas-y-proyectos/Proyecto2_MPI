@@ -7,6 +7,5 @@ Makefile text eol=lf
 Dockerfile text eol=lf
 *.bin binary
 *.pdf binary
-# Conserva los logs reales tal como los imprimen herramientas del entorno.
+# Conserva el log de pruebas tal como lo imprimen las herramientas.
 evidence/*.log -whitespace
-evidence/entorno.txt -whitespace

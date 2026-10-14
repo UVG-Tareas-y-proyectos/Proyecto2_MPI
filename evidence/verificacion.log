@@ -97,7 +97,7 @@ start=0
 end=100
 status=found
 attempts=38
-seconds=0.000046943
+seconds=0.000053943
 key=37
 bytes_recovered=41
 output=/workspace/private/tests/seq.search
@@ -114,7 +114,7 @@ start=0
 end=37
 status=not_found
 attempts=37
-seconds=0.000169208
+seconds=0.000049258
 key=none
 exit_code=2
 
@@ -126,7 +126,7 @@ start=37
 end=38
 status=found
 attempts=1
-seconds=0.000007714
+seconds=0.000004639
 key=37
 bytes_recovered=41
 exit_code=0
@@ -139,7 +139,7 @@ start=5
 end=6
 status=not_found
 attempts=1
-seconds=0.000004982
+seconds=0.000004021
 key=none
 exit_code=2
 
@@ -151,7 +151,7 @@ start=0
 end=0
 status=not_found
 attempts=0
-seconds=0.000000115
+seconds=0.000000111
 key=none
 exit_code=2
 
@@ -222,7 +222,7 @@ distribution=cyclic
 key=37
 attempts=85
 status=found
-seconds=0.000331450
+seconds=0.000076978
 exit_code=0
 
 $ cmp /workspace/private/tests/binary.original /workspace/private/tests/mpi.search
@@ -240,7 +240,7 @@ distribution=cyclic
 key=none
 attempts=37
 status=not_found
-seconds=0.000032988
+seconds=0.000026359
 --------------------------------------------------------------------------
 Primary job  terminated normally, but 1 process returned
 a non-zero exit code. Per user-direction, the job has been aborted.
@@ -249,7 +249,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1338,1],3]
+  Process name: [[25288,1],0]
   Exit code:    2
 --------------------------------------------------------------------------
 exit_code=2
@@ -266,7 +266,7 @@ distribution=cyclic
 key=37
 attempts=1
 status=found
-seconds=0.000020710
+seconds=0.000013421
 exit_code=0
 
 $ mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input /workspace/private/tests/binary.bin --keyword PISTA_PRUEBA_MPI_DISTINTIVA --start 5 --end 6
@@ -281,7 +281,7 @@ distribution=cyclic
 key=none
 attempts=1
 status=not_found
-seconds=0.000030096
+seconds=0.000029035
 --------------------------------------------------------------------------
 Primary job  terminated normally, but 1 process returned
 a non-zero exit code. Per user-direction, the job has been aborted.
@@ -290,7 +290,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1304,1],1]
+  Process name: [[25326,1],0]
   Exit code:    2
 --------------------------------------------------------------------------
 exit_code=2
@@ -307,7 +307,7 @@ distribution=cyclic
 key=none
 attempts=0
 status=not_found
-seconds=0.000008410
+seconds=0.000010396
 --------------------------------------------------------------------------
 Primary job  terminated normally, but 1 process returned
 a non-zero exit code. Per user-direction, the job has been aborted.
@@ -316,7 +316,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1295,1],3]
+  Process name: [[25343,1],2]
   Exit code:    2
 --------------------------------------------------------------------------
 exit_code=2
@@ -337,7 +337,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1534,1],0]
+  Process name: [[25100,1],0]
   Exit code:    1
 --------------------------------------------------------------------------
 exit_code=1
@@ -358,7 +358,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1517,1],2]
+  Process name: [[25117,1],0]
   Exit code:    1
 --------------------------------------------------------------------------
 exit_code=1
@@ -379,7 +379,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1500,1],1]
+  Process name: [[25106,1],0]
   Exit code:    1
 --------------------------------------------------------------------------
 exit_code=1
@@ -400,7 +400,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1491,1],1]
+  Process name: [[25123,1],1]
   Exit code:    1
 --------------------------------------------------------------------------
 exit_code=1
@@ -415,7 +415,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1474,1],0]
+  Process name: [[25136,1],2]
   Exit code:    1
 --------------------------------------------------------------------------
 exit_code=1
@@ -432,7 +432,7 @@ distribution=cyclic
 key=none
 attempts=40001
 status=not_found
-seconds=0.019327799
+seconds=0.022024515
 --------------------------------------------------------------------------
 Primary job  terminated normally, but 1 process returned
 a non-zero exit code. Per user-direction, the job has been aborted.
@@ -441,7 +441,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1457,1],2]
+  Process name: [[25153,1],0]
   Exit code:    2
 --------------------------------------------------------------------------
 exit_code=2
@@ -458,7 +458,7 @@ distribution=cyclic
 key=37
 attempts=85
 status=found
-seconds=0.000059571
+seconds=0.000094430
 exit_code=0
 
 $ cmp /workspace/private/tests/binary.original /workspace/private/tests/distribution.cyclic
@@ -476,7 +476,7 @@ distribution=cyclic
 key=none
 attempts=40001
 status=not_found
-seconds=0.017545709
+seconds=0.023503708
 --------------------------------------------------------------------------
 Primary job  terminated normally, but 1 process returned
 a non-zero exit code. Per user-direction, the job has been aborted.
@@ -485,7 +485,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1424,1],0]
+  Process name: [[25190,1],3]
   Exit code:    2
 --------------------------------------------------------------------------
 exit_code=2
@@ -502,7 +502,7 @@ distribution=block
 key=37
 attempts=88
 status=found
-seconds=0.000059214
+seconds=0.000052663
 exit_code=0
 
 $ cmp /workspace/private/tests/binary.original /workspace/private/tests/distribution.block
@@ -520,7 +520,7 @@ distribution=block
 key=none
 attempts=40001
 status=not_found
-seconds=0.021979808
+seconds=0.021627925
 --------------------------------------------------------------------------
 Primary job  terminated normally, but 1 process returned
 a non-zero exit code. Per user-direction, the job has been aborted.
@@ -529,7 +529,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1143,1],0]
+  Process name: [[25479,1],3]
   Exit code:    2
 --------------------------------------------------------------------------
 exit_code=2
@@ -550,7 +550,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1126,1],1]
+  Process name: [[25492,1],0]
   Exit code:    1
 --------------------------------------------------------------------------
 exit_code=1
@@ -584,7 +584,7 @@ start=72057594037927934
 end=72057594037927936
 status=found
 attempts=2
-seconds=0.000005955
+seconds=0.000005677
 key=72057594037927935
 bytes_recovered=28
 output=/workspace/private/tests/upper.seq
@@ -605,7 +605,7 @@ distribution=cyclic
 key=72057594037927935
 attempts=2
 status=found
-seconds=0.000014678
+seconds=0.000019840
 exit_code=0
 
 $ cmp /workspace/private/tests/upper_bound.original /workspace/private/tests/upper.mpi
@@ -626,7 +626,7 @@ a non-zero exit code. Per user-direction, the job has been aborted.
 mpirun detected that one or more processes exited with non-zero status, thus causing
 the job to be terminated. The first process to do so was:
 
-  Process name: [[1091,1],0]
+  Process name: [[25523,1],1]
   Exit code:    1
 --------------------------------------------------------------------------
 exit_code=1

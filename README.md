@@ -43,8 +43,6 @@ docker run --rm --mount "type=bind,source=$($PWD.Path),target=/workspace" proyec
 
 Las claves y los originales se guardan en `private/`, excluido de Git.
 Los ejecutables se generan en `build/`, también excluido.
-La carpeta `docs/` contiene documentación privada del equipo y se conserva
-sólo en la copia local; no se incluye al clonar el repositorio público.
 
 ## Cifrar, descifrar y recuperar
 
@@ -75,7 +73,7 @@ En PowerShell se puede anteponer `.\scripts\run_docker.ps1` a cada comando
 ```
 
 `--oversubscribe` permite lanzar cuatro procesos aun si Docker asigna menos
-nucleos; la asignación real de CPU se registra en `evidence/entorno.txt`.
+nucleos.
 La búsqueda nunca lee el archivo de clave. El intervalo de prueba es `[0,2^20)`,
 no el dominio completo DES `[0,2^56)`. El programa acepta ambos límites.
 
@@ -83,21 +81,12 @@ no el dominio completo DES `[0,2^56)`. El programa acepta ambos límites.
 
 ```bash
 make test
-make measure
 make benchmark
 make benchmark-check
-python3 scripts/package.py avance
-python3 scripts/package.py foro --formato-propio
 ```
 
 `make test` usa casos artificiales y un vector conocido para comprobar DES
 independientemente del propio descifrado. El log es `evidence/verificacion.log`.
-`make measure` ejecuta un calentamiento excluido y diez repeticiones secuenciales,
-diez con 2 procesos y diez con 4. Cada recuperación se compara byte a byte.
-El CSV y el log completos están en `private/evidence/`, porque los resultados
-de búsqueda y los intentos revelan la clave. Los promedios están en
-`evidence/promedios.txt`. Se fija la misma clave, cifrado, rango y compilación
-en todas las repeticiones; el CSV identifica el commit del código.
 
 Tiempo secuencial: reloj monotónico del propio proceso. Tiempo MPI: máximo de
 los intervalos medidos con `MPI_Wtime` por cada proceso. Ambos excluyen lectura
@@ -115,7 +104,7 @@ la bitácora.
 `dist/entrega_final.zip` reúne el código fuente, el informe DOCX/PDF, el texto
 cifrado y la evidencia pública. La clave y el plaintext permanecen fuera de Git;
 pueden entregarse al docente por un canal separado si solicita una verificación.
-El paquete se genera con `python3 scripts/package.py final` y se comprueba con
+El paquete se genera con `python3 scripts/package.py` y se comprueba con
 `python3 scripts/final_check.py`.
 
 No se atribuyen resultados a otros equipos: los insumos disponibles solo incluyen
