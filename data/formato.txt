@@ -1,5 +1,5 @@
-ESTADO: formato propio implementado por indicación del usuario; aceptación de
-clase e interoperabilidad con otros equipos aún sin verificar.
+ESTADO: el formato propio sigue siendo el predeterminado. El programa también
+acepta --format course para archivos generados con el código base de la clase.
 Algoritmo: DES simple, 56 bits efectivos, bloques de 8 bytes.
 Modo: ECB (elección provisional propia, no confirmada por la clase).
 Relleno: PKCS#7; siempre agrega entre 1 y 8 bytes.
@@ -15,3 +15,11 @@ Frase literal de búsqueda: Estudiante
 Pista humana: Le tiene miedo a las mujeres
 La pista humana es una adivinanza y no se usa como substring en el descifrado.
 Recuperación con clave conocida verificada exacta mediante cmp (salida0).
+
+Compatibilidad course:
+- DES-ECB sin cabecera ni IV.
+- El índice se separa desde los 7 bits menos significativos hacia los más
+  significativos, como hace el bruteforce.c proporcionado.
+- El último bloque se completa con bytes cero y se eliminan únicamente los
+  ceros finales al guardar el texto recuperado.
+- Se activa explícitamente con --format course; no modifica el formato anterior.

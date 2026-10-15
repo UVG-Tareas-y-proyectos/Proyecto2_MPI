@@ -15,19 +15,22 @@ typedef struct {
     const char *keyword;
     const char *start_text;
     const char *end_text;
+    const char *format_text;
     uint64_t start;
     uint64_t end;
+    des_format format;
 } options;
 
 static void usage(FILE *stream)
 {
     fprintf(stream,
         "Usage:\n"
-        "  des_tool encrypt --input FILE --output FILE --key-file FILE\n"
-        "  des_tool decrypt --input FILE --output FILE --key-file FILE\n"
-        "  des_tool search --input FILE --keyword TEXT --start INDEX --end INDEX [--output FILE]\n"
+        "  des_tool encrypt --input FILE --output FILE --key-file FILE [--format course|pkcs7]\n"
+        "  des_tool decrypt --input FILE --output FILE --key-file FILE [--format course|pkcs7]\n"
+        "  des_tool search --input FILE --keyword TEXT --start INDEX --end INDEX\n"
+        "                  [--output FILE] [--format course|pkcs7]\n"
         "Indices are decimal; keys are in [0, 2^56), end is exclusive.\n"
-        "Provisional format: raw DES-ECB with PKCS#7 padding.\n"
+        "Default format: pkcs7. Use course for files made with the class base code.\n"
         "Exit codes: 0 success/found; 1 argument or operational error; 2 search exhausted.\n");
 }
 
@@ -43,6 +46,7 @@ static int same_file(const char *left, const char *right)
 static int parse_options(int argc, char **argv, int search, options *opts)
 {
     memset(opts, 0, sizeof(*opts));
+    opts->format = DES_FORMAT_PKCS7;
     for (int i = 2; i < argc; i += 2) {
         const char **destination = NULL;
         if (strcmp(argv[i], "--input") == 0) destination = &opts->input;
@@ -51,6 +55,7 @@ static int parse_options(int argc, char **argv, int search, options *opts)
         else if (search && strcmp(argv[i], "--keyword") == 0) destination = &opts->keyword;
         else if (search && strcmp(argv[i], "--start") == 0) destination = &opts->start_text;
         else if (search && strcmp(argv[i], "--end") == 0) destination = &opts->end_text;
+        else if (strcmp(argv[i], "--format") == 0) destination = &opts->format_text;
         if (destination == NULL) {
             fprintf(stderr, "error=Unknown or unsupported option '%s'\n", argv[i]);
             return 0;
@@ -64,6 +69,14 @@ static int parse_options(int argc, char **argv, int search, options *opts)
             return 0;
         }
         *destination = argv[i + 1];
+    }
+    if (opts->format_text != NULL) {
+        if (strcmp(opts->format_text, "course") == 0) {
+            opts->format = DES_FORMAT_COURSE;
+        } else if (strcmp(opts->format_text, "pkcs7") != 0) {
+            fprintf(stderr, "error=Format must be 'course' or 'pkcs7'\n");
+            return 0;
+        }
     }
     if (opts->input == NULL ||
         (!search && (opts->output == NULL || opts->key_file == NULL)) ||
@@ -96,15 +109,16 @@ static int run_cipher(const char *operation, const options *opts)
         !des_read_file(opts->input, &input, &input_length, error, sizeof(error)) ||
         !des_crypto_init(&crypto, error, sizeof(error))) goto cleanup;
     if (strcmp(operation, "encrypt") == 0) {
-        if (!des_encrypt_buffer(&crypto, index, input, input_length, &output,
+        if (!des_encrypt_buffer(&crypto, index, opts->format, input, input_length, &output,
                                 &output_length, error, sizeof(error))) goto cleanup;
     } else {
-        if (!des_decrypt_buffer(&crypto, index, input, input_length, &output,
+        if (!des_decrypt_buffer(&crypto, index, opts->format, input, input_length, &output,
                                 &output_length, error, sizeof(error))) goto cleanup;
     }
     if (!des_write_file(opts->output, output, output_length, error, sizeof(error))) goto cleanup;
-    printf("operation=%s\nstatus=ok\ninput=%s\noutput=%s\nbytes_in=%zu\nbytes_out=%zu\n",
-           operation, opts->input, opts->output, input_length, output_length);
+    printf("operation=%s\nformat=%s\nstatus=ok\ninput=%s\noutput=%s\nbytes_in=%zu\nbytes_out=%zu\n",
+           operation, opts->format == DES_FORMAT_COURSE ? "course" : "pkcs7",
+           opts->input, opts->output, input_length, output_length);
     result = 0;
 cleanup:
     if (result != 0) fprintf(stderr, "status=error\nerror=%s\n", error);
@@ -130,7 +144,8 @@ static int run_search(const options *opts)
     int found = 0, result = 1;
     if (!des_read_file(opts->input, &ciphertext, &ciphertext_length, error, sizeof(error)) ||
         !des_crypto_init(&crypto, error, sizeof(error)) ||
-        !des_candidate_init(&candidate, &crypto, ciphertext_length, error, sizeof(error))) goto cleanup;
+        !des_candidate_init(&candidate, &crypto, ciphertext_length, opts->format,
+                            error, sizeof(error))) goto cleanup;
     begin = des_monotonic_seconds();
     if (begin < 0.0) {
         (void)snprintf(error, sizeof(error), "Cannot read monotonic clock");
@@ -155,7 +170,8 @@ static int run_search(const options *opts)
     }
     if (found && opts->output != NULL &&
         !des_write_file(opts->output, candidate.plaintext, plaintext_length, error, sizeof(error))) goto cleanup;
-    printf("algorithm=sequential\ninput=%s\nkeyword=%s\nstart=%" PRIu64 "\nend=%" PRIu64 "\n",
+    printf("algorithm=sequential\nformat=%s\ninput=%s\nkeyword=%s\nstart=%" PRIu64 "\nend=%" PRIu64 "\n",
+           opts->format == DES_FORMAT_COURSE ? "course" : "pkcs7",
            opts->input, opts->keyword, opts->start, opts->end);
     printf("status=%s\nattempts=%" PRIu64 "\nseconds=%.9f\n",
            found ? "found" : "not_found", attempts, end - begin);

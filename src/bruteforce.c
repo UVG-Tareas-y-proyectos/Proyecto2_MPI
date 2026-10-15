@@ -21,6 +21,7 @@ typedef struct {
     uint64_t end;
     uint64_t batch;
     int distribution;
+    des_format format;
 } search_options;
 
 static void usage(FILE *stream, const char *program)
@@ -28,9 +29,10 @@ static void usage(FILE *stream, const char *program)
     fprintf(stream,
             "Usage: %s --input FILE --keyword TEXT [--start N] [--end N]\n"
             "          [--batch N] [--distribution cyclic|block] [--output FILE]\n"
+            "          [--format course|pkcs7]\n"
             "Searches [start,end) with cyclic or contiguous-block MPI distribution.\n"
             "Defaults: start=0, end=72057594037927936 (2^56), batch=4096,\n"
-            "distribution=cyclic.\n"
+            "distribution=cyclic, format=pkcs7. Use course for class files.\n"
             "Exit codes: 0=found, 2=not_found, 1=error.\n",
             program);
 }
@@ -55,7 +57,7 @@ static int parse_options(int argc, char **argv, search_options *options,
     int i;
 
     *options = (search_options){NULL, NULL, NULL, 0, DES_KEY_LIMIT, 4096,
-                                DISTRIBUTION_CYCLIC};
+                                DISTRIBUTION_CYCLIC, DES_FORMAT_PKCS7};
     for (i = 1; i < argc; ++i) {
         const char *name = argv[i];
         const char *value;
@@ -78,6 +80,8 @@ static int parse_options(int argc, char **argv, search_options *options,
             flag = 32u;
         } else if (strcmp(name, "--distribution") == 0) {
             flag = 64u;
+        } else if (strcmp(name, "--format") == 0) {
+            flag = 128u;
         } else {
             snprintf(error, error_size, "unknown argument: %s", name);
             return 0;
@@ -106,6 +110,16 @@ static int parse_options(int argc, char **argv, search_options *options,
             } else {
                 snprintf(error, error_size,
                          "invalid distribution: use cyclic or block");
+                return 0;
+            }
+        } else if (flag == 128u) {
+            if (strcmp(value, "course") == 0) {
+                options->format = DES_FORMAT_COURSE;
+            } else if (strcmp(value, "pkcs7") == 0) {
+                options->format = DES_FORMAT_PKCS7;
+            } else {
+                snprintf(error, error_size,
+                         "invalid format: use course or pkcs7");
                 return 0;
             }
         } else {
@@ -171,7 +185,7 @@ int main(int argc, char **argv)
     unsigned char *keyword = NULL;
     size_t ciphertext_length = 0;
     size_t keyword_length = 0;
-    uint64_t settings[6] = {0};
+    uint64_t settings[7] = {0};
     uint64_t *reports = NULL;
     MPI_Request *requests = NULL;
     des_crypto crypto = {0};
@@ -225,6 +239,7 @@ int main(int argc, char **argv)
             settings[3] = (uint64_t)ciphertext_length;
             settings[4] = (uint64_t)keyword_length;
             settings[5] = (uint64_t)options.distribution;
+            settings[6] = (uint64_t)options.format;
         }
     }
     MPI_CALL(MPI_Bcast(&setup_status, 1, MPI_INT, 0, MPI_COMM_WORLD));
@@ -232,7 +247,7 @@ int main(int argc, char **argv)
         exit_code = setup_status == 2 ? 0 : 1;
         goto cleanup;
     }
-    MPI_CALL(MPI_Bcast(settings, 6, MPI_UINT64_T, 0, MPI_COMM_WORLD));
+    MPI_CALL(MPI_Bcast(settings, 7, MPI_UINT64_T, 0, MPI_COMM_WORLD));
     ciphertext_length = (size_t)settings[3];
     keyword_length = (size_t)settings[4];
     keyword = malloc(keyword_length + 1);
@@ -272,6 +287,7 @@ int main(int argc, char **argv)
     local_ready = des_crypto_init(&crypto, error, sizeof(error));
     if (local_ready) {
         local_ready = des_candidate_init(&candidate, &crypto, ciphertext_length,
+                                         (des_format)settings[6],
                                          error, sizeof(error));
     }
     if (!local_ready) {
@@ -378,7 +394,8 @@ int main(int argc, char **argv)
         if (decision[0] == DECISION_FOUND) {
             unsigned char *plaintext = NULL;
             size_t plaintext_length = 0;
-            int verified = des_decrypt_buffer(&crypto, decision[1], ciphertext,
+            int verified = des_decrypt_buffer(&crypto, decision[1],
+                                               (des_format)settings[6], ciphertext,
                                                ciphertext_length, &plaintext,
                                                &plaintext_length, error,
                                                sizeof(error));
@@ -407,8 +424,9 @@ int main(int argc, char **argv)
             exit_code = 1;
             status = "error";
         }
-        printf("algorithm=mpi\ninput=%s\nkeyword=%s\nprocesses=%d\nstart=%" PRIu64
+        printf("algorithm=mpi\nformat=%s\ninput=%s\nkeyword=%s\nprocesses=%d\nstart=%" PRIu64
                "\nend=%" PRIu64 "\nbatch=%" PRIu64 "\ndistribution=%s\n",
+               settings[6] == DES_FORMAT_COURSE ? "course" : "pkcs7",
                options.input, options.keyword, processes, settings[0],
                 settings[1], settings[2],
                 settings[5] == DISTRIBUTION_BLOCK ? "block" : "cyclic");

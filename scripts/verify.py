@@ -21,6 +21,15 @@ def key_index(key_bytes):
         result = (result << 7) | (byte >> 1)
     return result
 
+def course_key_bytes(index):
+    result = bytearray()
+    for group_index in range(8):
+        group = (index >> (7 * group_index)) & 0x7f
+        value = group << 1
+        value |= int(value.bit_count() % 2 == 0)
+        result.append(value)
+    return bytes(result)
+
 with LOG.open('w', encoding='utf-8') as log:
     def run(args, expected=0):
         import shlex
@@ -55,6 +64,36 @@ with LOG.open('w', encoding='utf-8') as log:
     reference = CASE / 'vector_reference.bin'
     run(['openssl', 'enc', '-des-ecb', '-provider', 'default', '-provider', 'legacy', '-K', vector_key.hex(), '-in', str(vector[0]), '-out', str(reference)])
     run(['cmp', str(vector[1]), str(reference)])
+    # Compatibilidad independiente con el orden de bits del código base del curso.
+    course_original = CASE / 'course.original'
+    course_padded = CASE / 'course.padded'
+    course_cipher = CASE / 'course.bin'
+    course_reference = CASE / 'course.reference'
+    course_recovered = CASE / 'course.recovered'
+    course_keyfile = CASE / 'course.key'
+    course_content = b'TEXTO_CURSO_CON_PISTA_DISTINTIVA'
+    course_key = 341
+    course_original.write_bytes(course_content)
+    course_padded.write_bytes(
+        course_content + b'\0' * ((-len(course_content)) % 8)
+    )
+    course_keyfile.write_text(f'{course_key}\n', encoding='ascii')
+    course_args = ['--format', 'course']
+    run([TOOL, 'encrypt', '--input', str(course_original), '--output',
+         str(course_cipher), '--key-file', str(course_keyfile)] + course_args)
+    run(['openssl', 'enc', '-des-ecb', '-provider', 'default', '-provider',
+         'legacy', '-nopad', '-K', course_key_bytes(course_key).hex(),
+         '-in', str(course_padded), '-out', str(course_reference)])
+    run(['cmp', str(course_cipher), str(course_reference)])
+    run([TOOL, 'decrypt', '--input', str(course_cipher), '--output',
+         str(course_recovered), '--key-file', str(course_keyfile)] + course_args)
+    run(['cmp', str(course_original), str(course_recovered)])
+    for prefix in [[TOOL, 'search'], MPI]:
+        result = run(prefix + ['--input', str(course_cipher), '--keyword',
+                               'PISTA_DISTINTIVA', '--start', '0', '--end',
+                               '500', '--format', 'course'])
+        assert dict(re.findall(r'^([a-z_]+)=(.*)$', result, re.M))['key'] == str(course_key)
+    log.write('PASS compatibilidad course con referencia OpenSSL y búsqueda MPI\n')
     roundtrip('empty', b'')
     roundtrip('unaligned', 'Prueba de longitud irregular: ñ.\n'.encode('utf-8'))
     original, cipher, keyfile = roundtrip('binary', b'\x00prefijo\x00PISTA_PRUEBA_MPI_DISTINTIVA\x00fin\xff', 37)

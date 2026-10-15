@@ -17,6 +17,10 @@ El formato DES-ECB con PKCS#7 está documentado en `data/formato.txt`. La búsqu
 MPI permite comparar `--distribution block` y `--distribution cyclic`; el reparto
 cíclico es el valor predeterminado.
 
+El formato original del repositorio sigue siendo el predeterminado. La opción
+`--format course` agrega compatibilidad con los archivos creados mediante el
+`bruteforce.c` proporcionado en clase, sin modificar `data/texto.bin`.
+
 El texto elegido por el equipo ya está cifrado en `data/texto.bin`. La pista humana
 es «Le tiene miedo a las mujeres» y la frase literal de búsqueda es `Estudiante`.
 El original y la clave no se incluyen en el repositorio público.
@@ -60,6 +64,25 @@ mpirun --oversubscribe -np 2 ./build/bruteforce_mpi --input data/texto.bin --key
 mpirun --oversubscribe -np 4 ./build/bruteforce_mpi --input data/texto.bin --keyword 'Estudiante' --start 0 --end 1048576 --output private/recuperado_mpi4.txt
 cmp private/texto_original.txt private/recuperado_mpi4.txt
 ```
+
+### Probar un archivo publicado por otro grupo
+
+Para los archivos cifrados con el código base de la clase se agrega
+`--format course`. Por ejemplo, para el texto del Grupo 7 ubicado en el
+Escritorio y su rango `[0, 4194304)`:
+
+```bash
+mkdir -p private
+mpirun --oversubscribe -np 4 ./build/bruteforce_mpi \
+  --input /mnt/c/Users/VICTUS/Desktop/texto.bin \
+  --keyword 'se le olvida como manejar' \
+  --start 0 --end 4194304 \
+  --format course \
+  --output private/grupo7_recuperado.txt
+```
+
+Este caso debe reportar `key=3412587` y `status=found`. Sin `--format course`,
+el programa conserva el comportamiento PKCS#7 usado por el cifrado del Grupo 6.
 
 En PowerShell se puede anteponer `.\scripts\run_docker.ps1` a cada comando
 (usar `./build/...` para la ruta interna Linux), por ejemplo:

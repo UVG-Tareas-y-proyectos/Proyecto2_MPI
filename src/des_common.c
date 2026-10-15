@@ -40,6 +40,11 @@ static int valid_ciphertext_length(size_t length)
            length <= DES_MAX_FILE_SIZE;
 }
 
+static int valid_format(des_format format)
+{
+    return format == DES_FORMAT_PKCS7 || format == DES_FORMAT_COURSE;
+}
+
 int des_crypto_init(des_crypto *crypto, char *error, size_t error_size)
 {
     if (crypto == NULL) {
@@ -246,17 +251,19 @@ int des_write_file(const char *path, const unsigned char *data, size_t length,
     return ok;
 }
 
-void des_index_to_key(uint64_t index, unsigned char key[DES_BLOCK_SIZE])
+void des_index_to_key(uint64_t index, des_format format,
+                      unsigned char key[DES_BLOCK_SIZE])
 {
     for (unsigned i = 0; i < DES_BLOCK_SIZE; ++i) {
-        unsigned group = (unsigned)((index >> (7u * (7u - i))) & UINT64_C(0x7f));
+        unsigned group_index = format == DES_FORMAT_COURSE ? i : 7u - i;
+        unsigned group = (unsigned)((index >> (7u * group_index)) & UINT64_C(0x7f));
         unsigned ones = 0;
         for (unsigned bit = 0; bit < 7; ++bit) ones += (group >> bit) & 1u;
         key[i] = (unsigned char)((group << 1) | ((ones & 1u) ^ 1u));
     }
 }
 
-int des_encrypt_buffer(const des_crypto *crypto, uint64_t index,
+int des_encrypt_buffer(const des_crypto *crypto, uint64_t index, des_format format,
                        const unsigned char *input, size_t input_length,
                        unsigned char **output, size_t *output_length,
                        char *error, size_t error_size)
@@ -264,6 +271,9 @@ int des_encrypt_buffer(const des_crypto *crypto, uint64_t index,
     EVP_CIPHER_CTX *ctx = NULL;
     unsigned char key[DES_BLOCK_SIZE];
     unsigned char *buffer = NULL;
+    unsigned char *padded = NULL;
+    const unsigned char *source = input;
+    size_t source_length = input_length;
     int first = 0, last = 0, success = 0;
     if (output == NULL || output_length == NULL) {
         set_error(error, error_size, "Missing encryption output");
@@ -271,23 +281,37 @@ int des_encrypt_buffer(const des_crypto *crypto, uint64_t index,
     }
     *output = NULL;
     *output_length = 0;
-    if (crypto == NULL || crypto->cipher == NULL || index >= DES_KEY_LIMIT ||
+    if (crypto == NULL || crypto->cipher == NULL || !valid_format(format) ||
+        index >= DES_KEY_LIMIT ||
         (input == NULL && input_length != 0) ||
         input_length > DES_MAX_PLAINTEXT_SIZE) {
         set_error(error, error_size, "Invalid encryption parameters or oversized input");
         return 0;
     }
-    buffer = malloc(input_length + DES_BLOCK_SIZE);
+    if (format == DES_FORMAT_COURSE) {
+        source_length = input_length == 0
+                            ? DES_BLOCK_SIZE
+                            : ((input_length + DES_BLOCK_SIZE - 1u) /
+                               DES_BLOCK_SIZE) * DES_BLOCK_SIZE;
+        padded = calloc(source_length, 1);
+        if (padded != NULL && input_length != 0) {
+            memcpy(padded, input, input_length);
+        }
+        source = padded;
+    }
+    buffer = malloc(source_length + (format == DES_FORMAT_PKCS7
+                                         ? DES_BLOCK_SIZE
+                                         : 0u));
     ctx = EVP_CIPHER_CTX_new();
-    if (buffer == NULL || ctx == NULL) {
+    if (buffer == NULL || ctx == NULL || source == NULL) {
         set_error(error, error_size, "Cannot allocate encryption context");
         goto cleanup;
     }
-    des_index_to_key(index, key);
+    des_index_to_key(index, format, key);
     ERR_clear_error();
     if (EVP_EncryptInit_ex2(ctx, crypto->cipher, key, NULL, NULL) != 1 ||
-        EVP_CIPHER_CTX_set_padding(ctx, 1) != 1 ||
-        EVP_EncryptUpdate(ctx, buffer, &first, input, (int)input_length) != 1 ||
+        EVP_CIPHER_CTX_set_padding(ctx, format == DES_FORMAT_PKCS7) != 1 ||
+        EVP_EncryptUpdate(ctx, buffer, &first, source, (int)source_length) != 1 ||
         EVP_EncryptFinal_ex(ctx, buffer + first, &last) != 1) {
         crypto_error(error, error_size, "DES encryption failed");
         goto cleanup;
@@ -299,23 +323,27 @@ int des_encrypt_buffer(const des_crypto *crypto, uint64_t index,
 cleanup:
     OPENSSL_cleanse(key, sizeof(key));
     EVP_CIPHER_CTX_free(ctx);
+    if (padded != NULL) OPENSSL_clear_free(padded, source_length);
     free(buffer);
     return success;
 }
 
 int des_candidate_init(des_candidate *candidate, const des_crypto *crypto,
-                       size_t ciphertext_length, char *error, size_t error_size)
+                       size_t ciphertext_length, des_format format,
+                       char *error, size_t error_size)
 {
     if (candidate == NULL) {
         set_error(error, error_size, "Missing candidate context");
         return 0;
     }
     memset(candidate, 0, sizeof(*candidate));
-    if (crypto == NULL || crypto->cipher == NULL || !valid_ciphertext_length(ciphertext_length)) {
+    if (crypto == NULL || crypto->cipher == NULL || !valid_format(format) ||
+        !valid_ciphertext_length(ciphertext_length)) {
         set_error(error, error_size, "Ciphertext must contain complete eight-byte blocks and fit the file limit");
         return 0;
     }
     candidate->crypto = crypto;
+    candidate->format = format;
     candidate->capacity = ciphertext_length + DES_BLOCK_SIZE;
     candidate->ctx = EVP_CIPHER_CTX_new();
     candidate->plaintext = malloc(candidate->capacity);
@@ -359,7 +387,7 @@ static int decrypt_candidate(des_candidate *candidate, uint64_t index,
         set_error(error, error_size, "Invalid candidate parameters");
         return -1;
     }
-    des_index_to_key(index, key);
+    des_index_to_key(index, candidate->format, key);
     ERR_clear_error();
     /* Reuse the cipher and allocated output; only the candidate key changes. */
     if (EVP_DecryptInit_ex2(candidate->ctx, NULL, key, NULL, NULL) != 1 ||
@@ -374,6 +402,14 @@ static int decrypt_candidate(des_candidate *candidate, uint64_t index,
     if ((size_t)first + (size_t)last != ciphertext_length) {
         set_error(error, error_size, "Unexpected DES plaintext length");
         return -1;
+    }
+    if (candidate->format == DES_FORMAT_COURSE) {
+        *plaintext_length = ciphertext_length;
+        while (*plaintext_length > 0 &&
+               candidate->plaintext[*plaintext_length - 1] == '\0') {
+            --*plaintext_length;
+        }
+        return 1;
     }
     /* Verify PKCS#7 ourselves: invalid padding rejects a key, not the search. */
     pad = candidate->plaintext[ciphertext_length - 1];
@@ -411,7 +447,7 @@ int des_candidate_try(des_candidate *candidate, uint64_t index,
     return des_contains_bytes(candidate->plaintext, *plaintext_length, keyword, keyword_length);
 }
 
-int des_decrypt_buffer(const des_crypto *crypto, uint64_t index,
+int des_decrypt_buffer(const des_crypto *crypto, uint64_t index, des_format format,
                        const unsigned char *input, size_t input_length,
                        unsigned char **output, size_t *output_length,
                        char *error, size_t error_size)
@@ -424,12 +460,13 @@ int des_decrypt_buffer(const des_crypto *crypto, uint64_t index,
     }
     *output = NULL;
     *output_length = 0;
-    if (!des_candidate_init(&candidate, crypto, input_length, error, error_size)) return 0;
+    if (!des_candidate_init(&candidate, crypto, input_length, format,
+                            error, error_size)) return 0;
     result = decrypt_candidate(&candidate, index, input, input_length, output_length, error, error_size);
     if (result == 1) {
         *output = candidate.plaintext;
         candidate.plaintext = NULL;
-    } else if (result == 0) {
+    } else if (result == 0 && format == DES_FORMAT_PKCS7) {
         set_error(error, error_size, "Invalid PKCS#7 padding (wrong key or damaged ciphertext)");
     }
     des_candidate_cleanup(&candidate);
